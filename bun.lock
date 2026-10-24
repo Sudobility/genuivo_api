@@ -226,7 +226,6 @@
 
     "@sudobility/auth_service": ["@sudobility/auth_service@1.1.30", "https://npm.pkg.github.com/download/@sudobility/auth_service/1.1.30/ecd6cc5b9ff82cfbbcc3db42df53142f88736844", { "peerDependencies": { "@sudobility/types": "^1.9.76", "firebase-admin": "^13.0.0" } }, "sha512-/L6isHwryBTTMo7+SpdUFUzWpYfRefEBkCxZEAPiC7fgJVYha2ZmhyYChWQLFcQILcnq7tYhk9+IejKbjq8WxQ=="],
 
-    "@sudobility/genui_types": ["@sudobility/genui_types@0.0.1", "https://npm.pkg.github.com/@sudobility/genui_types/-/genui_types-0.0.1.tgz", {}, "sha512-upYoJVpy2y+cgIW2TwJtMuPhxzis42Dk5X6UtViTSh61GwnWofwK2atXsOrtDXPFj9vMrxJOVEOEu8UDR90p7g=="],
 
     "@sudobility/genuivo_types": ["@sudobility/genuivo_types@0.0.23", "https://npm.pkg.github.com/download/@sudobility/genuivo_types/0.0.23/8db005dcdcd494f94e47e0326a48194762b39e60", { "peerDependencies": { "@sudobility/genui_types": "^0.0.5", "@sudobility/types": "^1.9.76" } }, "sha512-yJtKyFYzS4xd/ZG3uki/8Tu09jfP1gJJVK3fENe86XkkthU5exoQNbWatVzTWD6ZGe7JQv/M89n05GD6lnSN6w=="],
 
