@@ -32,12 +32,14 @@ src/
 ├── routes/
 │   ├── index.ts                    # Route aggregator
 │   ├── users.ts                    # User routes
-│   ├── histories.ts                # CRUD /api/v1/users/:userId/histories
-│   └── historiesTotal.ts           # GET /api/v1/histories/total (public)
+│   ├── histories.ts                # CRUD /api/v1/users/:userId/histories (paginated list)
+│   ├── historiesTotal.ts           # GET /api/v1/histories/total (public)
+│   └── chat.ts                     # POST /api/v1/chat (ShapeShyft proxy)
 ├── services/
-│   └── firebase.ts                 # Firebase Admin initialization
+│   └── firebase.ts                 # Firebase Admin init + verifyIdToken
 └── lib/
-    └── env-helper.ts               # Environment variable helper
+    ├── env-helper.ts               # Environment variable helper
+    └── serializers.ts              # Row -> API-type serializers + validators
 ```
 
 ## Commands
@@ -45,23 +47,30 @@ src/
 ```bash
 bun run dev            # Watch mode (bun --watch)
 bun run build          # Build (bun build --target bun)
-bun run start          # Run built output
-bun test               # Run Vitest tests (colocated *.test.ts files)
-bun run typecheck      # TypeScript check
-bun run lint           # Run ESLint
-bun run verify         # All checks + build (use before commit)
+bun run start          # Run server (bun run src/index.ts)
+bun run test:unit      # Run Vitest suite (colocated *.test.ts) — NOT `bun test`
+bun run test:watch     # Vitest watch mode
+bun run typecheck      # tsc --noEmit
+bun run lint           # Run ESLint over src/
+bun run format         # Prettier --write src/**/*.ts
+bun run verify         # typecheck + lint + test:unit + build (use before commit)
 ```
+
+Tests run on Vitest, not Bun's built-in `bun test`. The `test:db` script is broken: it points at `vitest.db.config.ts`, which does not exist in the repo.
 
 ## API Routes
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/v1/users/:userId/histories` | Required | List user histories |
-| POST | `/api/v1/users/:userId/histories` | Required | Create history |
-| PUT | `/api/v1/users/:userId/histories/:id` | Required | Update history |
-| DELETE | `/api/v1/users/:userId/histories/:id` | Required | Delete history |
-| GET | `/api/v1/histories/total` | Public | Get global total |
+| GET | `/` | Public | API metadata |
 | GET | `/health` | Public | Health check |
+| GET | `/api/v1/histories/total` | Public | Get global total |
+| POST | `/api/v1/chat` | Optional | ShapeShyft chat proxy; `web_search` on only if authenticated |
+| GET | `/api/v1/users/:userId` | Required | Get user profile |
+| GET | `/api/v1/users/:userId/histories` | Required | List user histories (paginated: `limit`≤200, `offset`, `orderBy`) |
+| POST | `/api/v1/users/:userId/histories` | Required | Create history |
+| PUT | `/api/v1/users/:userId/histories/:historyId` | Required | Update history |
+| DELETE | `/api/v1/users/:userId/histories/:historyId` | Required | Delete history |
 
 ## Database Schema
 
@@ -87,8 +96,12 @@ Tables are created via raw SQL (no migration files). The DB connection uses a Pr
 | `FIREBASE_PROJECT_ID` | Firebase project ID | required |
 | `FIREBASE_CLIENT_EMAIL` | Firebase service account email | required |
 | `FIREBASE_PRIVATE_KEY` | Firebase service account private key | required |
-| `SITEADMIN_EMAILS` | Comma-separated admin emails | optional |
+| `SHAPESHYFT_API_URL` / `SHAPESHYFT_API_KEY` | Upstream chat service (required for `/chat`) | required for chat |
+| `SHAPESHYFT_TIMEOUT_MS` | Chat upstream timeout (ms) | `120000` |
+| `SITEADMIN_EMAILS` | Comma-separated admin emails (can read other users' data) | optional |
 | `PORT` | Server port | `8026` |
+
+Env is read via `src/lib/env-helper.ts`: `.env.local` > `.env`/system > default. See `.env.example`.
 
 ## Related Projects
 
@@ -118,6 +131,9 @@ Uses `@sudobility/auth_service` for Firebase token verification with caching.
 - The `userId` in route paths (`:userId`) is the Firebase UID, not a database-generated ID
 - The DB Proxy pattern means connection errors only surface on first actual query, not at startup
 - `FIREBASE_PRIVATE_KEY` often needs newline escaping (`\\n` -> `\n`) depending on how it is set in the environment
+- `@sudobility/*` packages resolve from GitHub Packages (`.npmrc` -> `npm.pkg.github.com`); install needs a GitHub `read:packages` token. The Dockerfile instead installs them from `registry.npmjs.org` via an `NPM_TOKEN` build arg — the two paths differ
+- `test:db` is currently broken (missing `vitest.db.config.ts`); use `test:unit`
+- The schema object in `src/db/schema.ts` is named `starterSchema` and its JSDoc still says "starter", but the actual Postgres schema is `genuivo` (`pgSchema("genuivo")`). The root `/` endpoint and startup log in `src/index.ts` are also hardcoded to the string "Starter API" / version "1.0.0" — legacy naming, not the real package version
 
 ## Git Workflow
 
